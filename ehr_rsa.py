@@ -28,9 +28,9 @@ PERMISSIONS = {
 }
 
 ROLE_INFO = {
-    "admin": "Mengelola kunci RSA dan memantau audit log. Tidak dapat mendekripsi data pasien.",
-    "dokter": "Memasukkan data pasien dan mendekripsi diagnosis dengan private key.",
-    "staf": "Memasukkan data pasien (enkripsi dengan public key). Tidak dapat mendekripsi.",
+    "admin": "Mengelola kunci RSA dan memantau riwayat aktivitas. Tidak dapat membuka diagnosis pasien.",
+    "dokter": "Mencatat data pasien dan membuka diagnosis dengan kunci privat.",
+    "staf": "Mencatat data pasien menggunakan kunci publik. Tidak dapat membuka diagnosis.",
 }
 
 USERS: dict[str, dict] = {}
@@ -355,60 +355,84 @@ def run_cli() -> None:
 
 CSS = """
 *{box-sizing:border-box}
-body{margin:0;background:#f3f6f8;color:#17212b;font:15px/1.5 system-ui,sans-serif}
-main{max-width:980px;margin:36px auto;padding:0 18px}
-h1{font-size:25px;margin:0}
-h2{font-size:18px;margin:0 0 12px}
-h3{font-size:15px;margin:14px 0 6px}
-p{color:#52616d;margin:6px 0}
-.card{background:white;border:1px solid #dfe6eb;border-radius:10px;padding:18px;margin:16px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0}
-.stat{background:white;border:1px solid #dfe6eb;border-radius:10px;padding:14px 18px}
-.stat b{display:block;font-size:22px}
-.stat span{font-size:13px;color:#52616d}
-.userbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+ :root{color-scheme:light;--ink:#202c26;--muted:#68756d;--green:#294d3b;--green-deep:#19392e;--red:#a74c3c;--paper:#fffefa;--line:#d8dfd7;--canvas:#edf0e9}
+body{margin:0;background:var(--canvas);color:var(--ink);font:15px/1.55 "Trebuchet MS","Segoe UI",sans-serif}
+main{max-width:1160px;margin:0 auto;padding:30px 30px 44px}
+.masthead{display:flex;align-items:center;gap:15px;border-bottom:1px solid #bdc8bd;padding:4px 0 19px;margin-bottom:24px}
+.brand-mark{display:grid;place-items:center;width:46px;height:46px;background:var(--green-deep);color:#fffefa;font:700 17px Georgia,serif;flex:none}
+.eyebrow{margin:0 0 3px!important;color:var(--red)!important;font-size:10px!important;font-weight:800;letter-spacing:1.6px;text-transform:uppercase}
+h1{font:500 30px/1.1 Georgia,"Times New Roman",serif;letter-spacing:0;margin:0}
+.masthead p:last-child{margin:5px 0 0;color:var(--muted);font-size:13px}
+h2{font:500 23px/1.2 Georgia,"Times New Roman",serif;letter-spacing:0;margin:0 0 14px}
+h3{font-size:15px;margin:20px 0 8px}
+p{color:var(--muted);margin:7px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:22px 24px;margin:15px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:#bdc8bd;border:1px solid #bdc8bd;margin:16px 0}
+.stat{background:var(--paper);padding:14px 17px}
+.stat b{display:block;font:500 26px Georgia,serif;color:var(--green-deep)}
+.stat span{font-size:12px;color:var(--muted)}
+.userbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:0;border-left:4px solid var(--red)}
 .userbar form{margin:0}
-label{display:block;margin:9px 0 4px;font-weight:600}
-input{width:100%;padding:9px;border:1px solid #cbd5dc;border-radius:6px}
-button{background:#145c78;color:white;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;margin-top:12px}
-table{width:100%;border-collapse:collapse}
-th,td{text-align:left;padding:8px 9px;border-bottom:1px solid #e7ecef;vertical-align:top}
-th{font-size:13px;color:#52616d}
+label{display:block;margin:12px 0 5px;color:var(--ink);font-size:13px;font-weight:700}
+input{width:100%;min-height:43px;padding:9px 11px;border:1px solid #bdc8bd;border-radius:2px;background:#fff;color:var(--ink);font:inherit}
+input:focus{outline:2px solid #d8a095;border-color:var(--red)}
+button{background:var(--green);color:white;border:0;border-radius:2px;padding:11px 17px;font:700 13px "Trebuchet MS","Segoe UI",sans-serif;cursor:pointer;margin-top:14px}
+button:hover{background:var(--green-deep)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 11px;border-bottom:1px solid #e1e5de;vertical-align:top}
+th{background:#f0f2ec;color:#56665b;font-size:11px;text-transform:uppercase;letter-spacing:.7px}
 td:last-child{overflow-wrap:anywhere}
-pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7f8;padding:12px;border-radius:6px;margin:8px 0;font-size:13px}
-.mono{font-family:ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
-.msg{font-weight:600;color:#9b321f}
-.msg.ok{color:#1b6b3a}
-.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0}
-.flow span{background:#e4eef3;border:1px solid #cfdde5;border-radius:6px;padding:4px 10px;font-size:13px}
-.kv td:first-child{width:210px;font-weight:600}
-.badge{display:inline-block;border-radius:6px;padding:1px 8px;font-size:13px;font-weight:600}
-.badge.ok{background:#dff3e6;color:#1b6b3a}
-.badge.bad{background:#fbe0dc;color:#9b321f}
-.badge.role{background:#e4eef3;color:#145c78}
-.secret{color:#9b321f;font-style:italic}
-.box{background:#f5f7f8;border-radius:8px;padding:12px}
-.box b{display:block;font-size:13px;color:#52616d;margin-bottom:4px}
-details summary{cursor:pointer;color:#145c78}
-small{color:#65737e}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f2ec;padding:12px;margin:8px 0;font-size:13px}
+.mono{font-family:ui-monospace,Consolas,monospace;overflow-wrap:anywhere;color:#285744}
+.msg{font-weight:700;color:#8e392e;background:#f7e9e4;border-left:3px solid var(--red);padding:10px 13px}
+.msg.ok{color:#294d3b;background:#e7eee6;border-color:var(--green)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:17px 0 20px;color:#78847b;font-size:12px}
+.flow span{background:transparent;border-bottom:1px solid #aebcaf;padding:4px 7px;color:var(--green-deep);font-weight:700}
+.kv td:first-child{width:210px;font-weight:700}
+.badge{display:inline-block;padding:2px 7px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge.ok{background:#e2ece1;color:#294d3b}
+.badge.bad{background:#f4e2dd;color:#963f32}
+.badge.role{background:#e8ece4;color:#294d3b}
+.secret{color:#963f32;font-style:italic}
+.box{background:#f2f3ed;border-left:2px solid #b6c3b4;padding:13px}
+.box b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase}
+details summary{cursor:pointer;color:var(--green);font-weight:700}
+small{color:var(--muted)}
+.page-foot{border-top:1px solid #bdc8bd;margin-top:27px;padding-top:12px;font-size:12px}
+.login-layout{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(340px,1.15fr);max-width:900px;margin:28px auto 0;background:var(--paper);border:1px solid var(--line)}
+.login-page{min-height:100svh;display:flex;flex-direction:column}
+.login-page .login-layout{width:min(100%,960px);margin:auto}
+.login-aside{position:relative;overflow:hidden;background:var(--green-deep);color:#f7f5ed;padding:35px 32px;display:flex;flex-direction:column;justify-content:center;min-height:360px}
+.login-aside:after{content:"RM";position:absolute;right:14px;bottom:-48px;color:rgba(247,245,237,.07);font:700 190px/.9 Georgia,serif;pointer-events:none}
+.login-aside>div{position:relative;z-index:1}
+.login-aside .eyebrow{color:#db9a82!important}
+.login-aside h2{font-size:29px;margin:9px 0 12px}
+.login-aside p{color:#d4ddd3}
+.role-list{border-top:1px solid #526d5f;margin-top:28px;padding-top:13px}
+.login-form{padding:35px 38px}
+.login-form h2{font-size:25px}
+.login-form button{width:100%;margin-top:20px}
+@media(max-width:700px){main{padding:19px 14px 30px}.masthead{align-items:flex-start}.brand-mark{width:42px;height:42px}h1{font-size:26px}.login-layout{grid-template-columns:1fr;margin-top:14px}.login-aside{min-height:auto;padding:24px}.login-form{padding:24px}.role-list{margin-top:18px}.card{padding:18px 15px;overflow-x:auto}.flow{gap:3px}.flow span{padding:4px 5px}table{min-width:520px}}
 """
 
-FLOW = ('<div class="flow"><span>Plaintext</span>→<span>ASCII</span>→<span>RSA: c = m<sup>e</sup> mod n</span>'
-        '→<span>Ciphertext</span>→<span>Database</span>→<span>RSA: m = c<sup>d</sup> mod n</span>'
-        '→<span>Plaintext</span></div>')
+FLOW = ('<div class="flow"><span>Teks asli</span>→<span>Kode ASCII</span>→<span>RSA: c = m<sup>e</sup> mod n</span>'
+    '→<span>Teks sandi</span>→<span>Penyimpanan</span>→<span>RSA: m = c<sup>d</sup> mod n</span>'
+    '→<span>Teks asli</span></div>')
 
 
 def _page(title: str, body: str, message: str = "", error: bool = False) -> bytes:
     msg_class = "msg" if error else "msg ok"
     msg_html = f'<p class="{msg_class}">{escape(message)}</p>' if message else ""
+    flow_html = "" if "login-layout" in body else FLOW
     html = (f'<!doctype html><html lang="id"><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{escape(title)}</title><style>{CSS}</style>'
-            f'<main><h1>Electronic Health Record</h1>'
-            f'<p>Demo edukasi RSA manual — data disimpan di memori selama server berjalan.</p>'
-            f'{FLOW}{msg_html}{body}'
-            f'<small>Simulasi lokal, bukan untuk data pasien nyata atau penggunaan produksi.</small></main></html>')
+            f'<main class="{"login-page" if "login-layout" in body else "app-page"}"><header class="masthead"><div class="brand-mark">RM</div><div>'
+            f'<p class="eyebrow">Orylda Hospital</p><h1>Ruang Rekam Medis</h1>'
+            f'<p>Catatan pasien</p></div></header>'
+            f'{flow_html}{msg_html}{body}'
+            f'</main></html>')
     return html.encode("utf-8")
 
 
@@ -441,35 +465,35 @@ def _encrypt_result_html(rows: list[dict], public_key: tuple[int, int]) -> str:
         f"<td class='mono'>{r['ascii']}<sup>{e}</sup> mod {n}</td>"
         f"<td class='mono'>{r['cipher']}</td><td>{_steps_cell(r['steps'])}</td></tr>"
         for r in rows)
-    return _card("Hasil enkripsi (per karakter)",
-                 "<table><thead><tr><th>Karakter</th><th>ASCII (m)</th><th>c = m^e mod n</th>"
-                 f"<th>Ciphertext (c)</th><th>Square-and-Multiply</th></tr></thead><tbody>{body}</tbody></table>")
+    return _card("Hasil enkripsi per karakter",
+                 "<table><thead><tr><th>Karakter</th><th>Kode ASCII (m)</th><th>Rumus RSA</th>"
+                 f"<th>Teks sandi (c)</th><th>Langkah hitung</th></tr></thead><tbody>{body}</tbody></table>")
 
 
 def _decrypt_result_html(patient: dict, rows: list[dict], key: tuple[int, int]) -> str:
     d, n = key
     plain = "".join(r["char"] for r in rows)
     if SHOW_SECRETS:
-        head = ("<th>Ciphertext (c)</th><th>m = c^d mod n</th><th>ASCII (m)</th>"
-                "<th>Karakter</th><th>Square-and-Multiply</th>")
+        head = ("<th>Teks sandi (c)</th><th>m = c^d mod n</th><th>Kode ASCII (m)</th>"
+            "<th>Karakter</th><th>Langkah hitung</th>")
         body = "".join(
             f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>{r['cipher']}<sup>{d}</sup> mod {n}</td>"
             f"<td>{r['m']}</td><td>{_show_char(r['char'])}</td><td>{_steps_cell(r['steps'])}</td></tr>"
             for r in rows)
     else:
-        head = "<th>Ciphertext (c)</th><th>Operasi</th><th>ASCII (m)</th><th>Karakter</th>"
+        head = "<th>Teks sandi (c)</th><th>Operasi</th><th>Kode ASCII (m)</th><th>Karakter</th>"
         body = "".join(
             f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>c<sup>d</sup> mod {n} "
             f"<span class='secret'>(d tidak ditampilkan)</span></td>"
             f"<td>{r['m']}</td><td>{_show_char(r['char'])}</td></tr>"
             for r in rows)
     return _card(
-        "Hasil dekripsi",
+        "Diagnosis setelah dibuka",
         f"<p>Pasien ID {patient['id']} — {escape(patient['nama'])}, {patient['umur']} tahun.</p>"
         "<div class='grid'>"
-        f"<div class='box'><b>Di database (ciphertext)</b><span class='mono'>{escape(patient['diagnosis'])}</span></div>"
-        f"<div class='box'><b>Hasil dekripsi (plaintext)</b>{escape(plain)}</div></div>"
-        f"<h3>Dekripsi per karakter</h3><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>")
+        f"<div class='box'><b>Tersimpan sebagai teks sandi</b><span class='mono'>{escape(patient['diagnosis'])}</span></div>"
+        f"<div class='box'><b>Diagnosis terbaca</b>{escape(plain)}</div></div>"
+        f"<h3>Rincian pembukaan per karakter</h3><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>")
 
 
 def run_web(host: str, port: int) -> None:
@@ -486,10 +510,10 @@ def run_web(host: str, port: int) -> None:
         audit.append((datetime.now().strftime("%H:%M:%S"), actor, text))
 
     def key_section() -> str:
-        button = "<form method='post' action='/keys'><button>Buat key pair</button></form>"
+        button = "<form method='post' action='/keys'><button>Buat pasangan kunci</button></form>"
         detail = state["detail"]
         if detail is None:
-            return _card("Manajemen kunci RSA", button + "<p>Key pair belum dibuat.</p>")
+            return _card("Pengaturan kunci RSA", button + "<p>Pasangan kunci belum dibuat.</p>")
         p, q, n, phi, e, d = (detail[k] for k in ("p", "q", "n", "phi", "e", "d"))
         ok_badge = '<span class="badge ok">terpenuhi</span>'
         bad_badge = '<span class="badge bad">gagal</span>'
@@ -499,40 +523,40 @@ def run_web(host: str, port: int) -> None:
         if SHOW_SECRETS:
             items = [("p", str(p)), ("q", str(q)), ("n = p × q", f"{p} × {q} = {n}"),
                      ("phi(n) = (p-1)(q-1)", f"{p - 1} × {q - 1} = {phi}"), ("e", str(e)),
-                     ("d = e⁻¹ mod phi(n)", str(d)), ("Public Key (e, n)", f"({e}, {n})"),
-                     ("Private Key (d, n)", f"({d}, {n})")]
+                     ("d = e⁻¹ mod phi(n)", str(d)), ("Kunci publik (e, n)", f"({e}, {n})"),
+                     ("Kunci privat (d, n)", f"({d}, {n})")]
             kv = "".join(f"<tr><td>{escape(k)}</td><td class='mono'>{escape(v)}</td></tr>" for k, v in items)
-            extra = ("<details><summary>Langkah Extended Euclidean Algorithm</summary>"
+            extra = ("<details><summary>Langkah algoritma Euclid diperluas</summary>"
                      f"<pre>{escape(chr(10).join(extended_euclid_log(e, phi)))}</pre></details>")
         else:
-            items = [("n = p × q", str(n)), ("e", str(e)), ("Public Key (e, n)", f"({e}, {n})")]
+            items = [("n = p × q", str(n)), ("e", str(e)), ("Kunci publik (e, n)", f"({e}, {n})")]
             kv = "".join(f"<tr><td>{escape(k)}</td><td class='mono'>{escape(v)}</td></tr>" for k, v in items)
             kv += (f"<tr><td>p, q, phi(n)</td><td>{secret}</td></tr>"
-                   f"<tr><td>Private Key (d, n)</td><td>{secret} (disimpan di server)</td></tr>")
-            extra = "<p><small>Log lengkap pembangkitan key dicetak di terminal server.</small></p>"
+                   f"<tr><td>Kunci privat (d, n)</td><td>{secret} (disimpan di server)</td></tr>")
+            extra = "<p><small>Rincian pembangkitan kunci dicetak di terminal server.</small></p>"
         verif = (f"<p>Verifikasi: gcd(e, phi) = 1 {ok_badge if gcd_ok else bad_badge} &nbsp; "
                  f"(e × d) mod phi = 1 {ok_badge if inv_ok else bad_badge}</p>")
-        return _card("Manajemen kunci RSA", f"{button}<table class='kv'><tbody>{kv}</tbody></table>{verif}{extra}")
+        return _card("Pengaturan kunci RSA", f"{button}<table class='kv'><tbody>{kv}</tbody></table>{verif}{extra}")
 
     def stats_section() -> str:
         key_status = "Sudah dibuat" if state["detail"] else "Belum dibuat"
         return ("<div class='stats'>"
-                f"<div class='stat'><b>{key_status}</b><span>Status key pair</span></div>"
-                f"<div class='stat'><b>{len(db)}</b><span>Jumlah record pasien</span></div>"
-                f"<div class='stat'><b>{len(audit)}</b><span>Catatan audit</span></div></div>")
+                f"<div class='stat'><b>{key_status}</b><span>Status pasangan kunci</span></div>"
+                f"<div class='stat'><b>{len(db)}</b><span>Jumlah catatan pasien</span></div>"
+                f"<div class='stat'><b>{len(audit)}</b><span>Aktivitas tercatat</span></div></div>")
 
     def audit_section() -> str:
         rows = "".join(
             f"<tr><td>{i}</td><td>{escape(t)}</td><td>{escape(who)}</td><td>{escape(act)}</td></tr>"
             for i, (t, who, act) in enumerate(audit, 1))
         empty = '<tr><td colspan="4">Belum ada catatan.</td></tr>'
-        return _card("Audit log",
-                     "<table><thead><tr><th>#</th><th>Waktu</th><th>Pelaku</th><th>Aksi</th></tr></thead>"
+        return _card("Riwayat aktivitas",
+                 "<table><thead><tr><th>No.</th><th>Waktu</th><th>Pengguna</th><th>Aktivitas</th></tr></thead>"
                      f"<tbody>{rows or empty}</tbody></table>")
 
     class Handler(BaseHTTPRequestHandler):
         def respond(self, body: str, message: str = "", status: int = 200) -> None:
-            payload = _page("EHR RSA Demo", body, message, error=status >= 400)
+            payload = _page("Ruang Rekam Medis", body, message, error=status >= 400)
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))
@@ -560,12 +584,16 @@ def run_web(host: str, port: int) -> None:
                 raise PermissionError("Akses ditolak: role Anda tidak punya izin untuk aksi ini.")
 
         def _login_form(self) -> str:
-            return _card("Login",
-                         "<form method='post' action='/login'>"
-                         "<label>Username</label><input name='username' required>"
-                         "<label>Password</label><input name='password' type='password' required>"
-                         "<button>Masuk</button></form>"
-                         "<p><small>Akun demo: admin/admin123, dokter/dokter123, staf/staf123</small></p>")
+            return ("<section class='login-layout'>"
+                    "<aside class='login-aside'><div><p class='eyebrow'>Login akun</p>"
+                    "<h2>Ruang Rekam Medis</h2>"
+                    "<p>Selamat Datang di Orylda Hospital.</p></div></aside>"
+                    "<div class='login-form'><p class='eyebrow'>Ruang Rekam Medis</p><h2>Masuk</h2>"
+                    "<form method='post' action='/login'>"
+                    "<label>Nama pengguna</label><input name='username' autocomplete='username' required>"
+                    "<label>Kata sandi</label><input name='password' type='password' autocomplete='current-password' required>"
+                    "<button>Masuk</button></form>"
+                    "</div></section>")
 
         def _body(self, user: str | None, enc_html: str = "", dec_html: str = "") -> str:
             role = self.role_of(user)
@@ -575,33 +603,33 @@ def run_web(host: str, port: int) -> None:
             out = ["<section class='card userbar'><div>"
                    f"<b>{escape(user)}</b> <span class='badge role'>{escape(role)}</span>"
                    f"<p>{escape(ROLE_INFO[role])}</p></div>"
-                   "<form method='post' action='/logout'><button>Logout</button></form></section>"]
+                   "<form method='post' action='/logout'><button>Keluar</button></form></section>"]
             if "keys" in perms:
                 out.append(stats_section())
                 out.append(key_section())
             if "insert" in perms:
-                out.append(_card("Input pasien",
+                out.append(_card("Tambah catatan pasien",
                                  "<form method='post' action='/patients'><div class='grid'><div>"
-                                 "<label>ID pasien</label><input name='id' type='number' min='1' required>"
+                                 "<label>Nomor pasien</label><input name='id' type='number' min='1' required>"
                                  "<label>Nama</label><input name='nama' required></div><div>"
                                  "<label>Umur</label><input name='umur' type='number' min='1' required>"
-                                 "<label>Diagnosis (ASCII)</label><input name='diagnosis' required></div></div>"
-                                 "<button>Simpan terenkripsi</button></form>"))
+                                 "<label>Diagnosis (karakter ASCII)</label><input name='diagnosis' required></div></div>"
+                                 "<button>Simpan catatan</button></form>"))
                 out.append(enc_html)
             if "view_raw" in perms:
                 rows = "".join(
                     f"<tr><td>{r['id']}</td><td>{escape(r['nama'])}</td><td>{r['umur']}</td>"
                     f"<td class='mono'>{escape(r['diagnosis'])}</td></tr>" for r in db)
-                out.append(_card("Database mentah",
-                                 "<p>Nama dan data administratif plaintext; diagnosis ciphertext.</p>"
+                out.append(_card("Catatan tersimpan",
+                                 "<p>Nama dan umur masih terbaca untuk diagnosis disimpan dalam bentuk teks sandi.</p>"
                                  "<table><thead><tr><th>ID</th><th>Nama</th><th>Umur</th>"
-                                 "<th>Diagnosis ciphertext</th></tr></thead>"
+                                 "<th>Diagnosis tersandi</th></tr></thead>"
                                  f"<tbody>{rows or empty_row}</tbody></table>"))
             if "decrypt" in perms:
-                out.append(_card("Dekripsi rekam medis",
-                                 "<form method='post' action='/decrypt'><label>ID pasien</label>"
+                out.append(_card("Buka diagnosis pasien",
+                                 "<form method='post' action='/decrypt'><label>Nomor pasien</label>"
                                  "<input name='id' type='number' min='1' required>"
-                                 "<button>Dekripsi</button></form>"))
+                                 "<button>Buka diagnosis</button></form>"))
                 out.append(dec_html)
             if "audit" in perms:
                 out.append(audit_section())
@@ -623,7 +651,7 @@ def run_web(host: str, port: int) -> None:
                 role = verify_user(username, get("password"))
                 if role is None:
                     note("anonim", f"login gagal untuk username '{username}'")
-                    self.respond(self._login_form(), "Username atau password salah.", 401)
+                    self.respond(self._login_form(), "Nama pengguna atau kata sandi tidak cocok.", 401)
                     return
                 token = new_session_token()
                 SESSIONS[token] = username
@@ -647,7 +675,7 @@ def run_web(host: str, port: int) -> None:
                     state["public"], state["private"], state["detail"] = generate_keys()
                     print(key_generation_log(state["detail"]))  # log lengkap hanya di terminal server
                     note(actor, "membuat key pair")
-                    message = "Key pair berhasil dibuat."
+                    message = "Pasangan kunci berhasil dibuat."
                 elif self.path == "/patients":
                     self.require(role, "insert")
                     if state["public"] is None:

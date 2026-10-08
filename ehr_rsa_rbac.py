@@ -324,11 +324,85 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7f8;padding:12px;
 .box b{display:block;font-size:13px;color:#52616d;margin-bottom:4px}
 details summary{cursor:pointer;color:#145c78}
 small{color:#65737e}
+:root{color-scheme:light;--ink:#19352e;--muted:#65756e;--green:#245b49;--green-dark:#183d33;--paper:#fffefa;--line:#dce5dc;--rust:#b3543d}
+body{background-color:#f1f4ed;background-image:linear-gradient(90deg,rgba(36,91,73,.035) 1px,transparent 1px),linear-gradient(rgba(36,91,73,.035) 1px,transparent 1px);background-size:28px 28px;color:var(--ink);font:15px/1.55 "Aptos","Segoe UI",sans-serif}
+main{max-width:1120px;margin:0 auto;padding:34px 28px 50px}
+.masthead{display:flex;align-items:center;gap:17px;border-bottom:1px solid #b8c9ba;padding:8px 0 22px;margin-bottom:22px}
+.brand-mark{display:grid;place-items:center;width:54px;height:54px;background:var(--green-dark);color:#f8f5e9;font:700 19px Georgia,serif;border-radius:3px;flex:none}
+.eyebrow{margin:0 0 2px!important;color:var(--rust)!important;font-size:11px!important;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}
+h1{font:500 34px/1.1 Georgia,"Times New Roman",serif;letter-spacing:0;margin:0}
+.masthead p:last-child{margin:6px 0 0;color:var(--muted);font-size:14px}
+h2{font:600 21px/1.25 Georgia,"Times New Roman",serif;letter-spacing:0;margin:0 0 14px}
+h3{font-size:15px;margin:20px 0 8px}
+p{color:var(--muted);margin:7px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--green);border-radius:3px;padding:22px 24px;margin:16px 0;box-shadow:0 7px 20px rgba(25,53,46,.045)}
+.grid{gap:18px}
+label{margin:12px 0 5px;color:var(--ink);font-size:13px;font-weight:700}
+input{min-height:42px;padding:9px 11px;border:1px solid #bdcbbf;border-radius:3px;background:#fff;color:var(--ink);font:inherit}
+input:focus{outline:3px solid rgba(181,84,61,.2);border-color:var(--rust)}
+button{background:var(--green);border-radius:3px;padding:11px 16px;font:700 13px "Aptos","Segoe UI",sans-serif;margin-top:14px}
+button:hover{background:var(--green-dark)}
+table{font-size:14px}
+th,td{padding:10px 11px;border-bottom:1px solid #e4e9e1}
+th{background:#edf2e9;color:#53665b;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+pre{background:#f0f3ec;padding:13px;border-radius:3px}
+.mono{color:#285744}
+.msg{font-weight:700;color:#a34331;background:#faece7;border-left:3px solid var(--rust);padding:10px 13px}
+.msg.ok{color:#245b49;background:#e8f1e8;border-color:var(--green)}
+.flow{gap:7px;margin:18px 0 22px;color:#849187;font-size:12px}
+.flow span{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:5px 10px;color:var(--green-dark);font-weight:700}
+.kv td:first-child{font-weight:700}
+.badge{border-radius:2px;padding:2px 8px;font-size:12px;font-weight:700}
+.badge.ok{background:#e1eee2;color:#245b49}
+.badge.bad{background:#f7e4df;color:#a34331}
+.box{background:#f0f3ec;border-left:2px solid #afc4ae;border-radius:0;padding:13px}
+.box b{font-size:12px;color:var(--muted);margin-bottom:5px}
+details summary{color:var(--green);font-weight:700}
+small{color:var(--muted)}
+.page-foot{border-top:1px solid #b8c9ba;margin-top:30px;padding-top:13px;font-size:12px}
+@media(max-width:620px){main{padding:20px 14px 32px}.masthead{align-items:flex-start}.brand-mark{width:45px;height:45px}h1{font-size:28px}.card{padding:18px 15px;overflow-x:auto}.flow{gap:5px}.flow span{padding:4px 7px}table{min-width:520px}}
+ :root{color-scheme:light;--ink:#19352e;--muted:#65756e;--green:#245b49;--green-dark:#183d33;--paper:#fffefa;--line:#dce5dc;--rust:#b3543d}
+body{background-color:#f1f4ed;background-image:linear-gradient(90deg,rgba(36,91,73,.035) 1px,transparent 1px),linear-gradient(rgba(36,91,73,.035) 1px,transparent 1px);background-size:28px 28px;color:var(--ink);font:15px/1.55 "Aptos","Segoe UI",sans-serif}
+main{max-width:1120px;margin:0 auto;padding:34px 28px 50px}
+.masthead{display:flex;align-items:center;gap:17px;border-bottom:1px solid #b8c9ba;padding:8px 0 22px;margin-bottom:22px}
+.brand-mark{display:grid;place-items:center;width:54px;height:54px;background:var(--green-dark);color:#f8f5e9;font:700 19px Georgia,serif;border-radius:3px;flex:none}
+.eyebrow{margin:0 0 2px!important;color:var(--rust)!important;font-size:11px!important;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}
+h1{font:500 34px/1.1 Georgia,"Times New Roman",serif;letter-spacing:0;margin:0}
+.masthead p:last-child{margin:6px 0 0;color:var(--muted);font-size:14px}
+h2{font:600 21px/1.25 Georgia,"Times New Roman",serif;letter-spacing:0;margin:0 0 14px}
+h3{font-size:15px;margin:20px 0 8px}
+p{color:var(--muted);margin:7px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--green);border-radius:3px;padding:22px 24px;margin:16px 0;box-shadow:0 7px 20px rgba(25,53,46,.045)}
+.grid{gap:18px}
+label{margin:12px 0 5px;color:var(--ink);font-size:13px;font-weight:700}
+input{min-height:42px;padding:9px 11px;border:1px solid #bdcbbf;border-radius:3px;background:#fff;color:var(--ink);font:inherit}
+input:focus{outline:3px solid rgba(181,84,61,.2);border-color:var(--rust)}
+button{background:var(--green);border-radius:3px;padding:11px 16px;font:700 13px "Aptos","Segoe UI",sans-serif;margin-top:14px}
+button:hover{background:var(--green-dark)}
+table{font-size:14px}
+th,td{padding:10px 11px;border-bottom:1px solid #e4e9e1}
+th{background:#edf2e9;color:#53665b;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+pre{background:#f0f3ec;padding:13px;border-radius:3px}
+.mono{color:#285744}
+.msg{font-weight:700;color:#a34331;background:#faece7;border-left:3px solid var(--rust);padding:10px 13px}
+.msg.ok{color:#245b49;background:#e8f1e8;border-color:var(--green)}
+.flow{gap:7px;margin:18px 0 22px;color:#849187;font-size:12px}
+.flow span{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:5px 10px;color:var(--green-dark);font-weight:700}
+.kv td:first-child{font-weight:700}
+.badge{border-radius:2px;padding:2px 8px;font-size:12px;font-weight:700}
+.badge.ok{background:#e1eee2;color:#245b49}
+.badge.bad{background:#f7e4df;color:#a34331}
+.box{background:#f0f3ec;border-left:2px solid #afc4ae;border-radius:0;padding:13px}
+.box b{font-size:12px;color:var(--muted);margin-bottom:5px}
+details summary{color:var(--green);font-weight:700}
+small{color:var(--muted)}
+.page-foot{border-top:1px solid #b8c9ba;margin-top:30px;padding-top:13px;font-size:12px}
+@media(max-width:620px){main{padding:20px 14px 32px}.masthead{align-items:flex-start}.brand-mark{width:45px;height:45px}h1{font-size:28px}.card{padding:18px 15px;overflow-x:auto}.flow{gap:5px}.flow span{padding:4px 7px}table{min-width:520px}}
 """
 
-FLOW = ('<div class="flow"><span>Plaintext</span>→<span>ASCII</span>→<span>RSA: c = m<sup>e</sup> mod n</span>'
-        '→<span>Ciphertext</span>→<span>Database</span>→<span>RSA: m = c<sup>d</sup> mod n</span>'
-        '→<span>Plaintext</span></div>')
+FLOW = ('<div class="flow"><span>Teks asli</span>→<span>Kode ASCII</span>→<span>RSA: c = m<sup>e</sup> mod n</span>'
+    '→<span>Teks sandi</span>→<span>Penyimpanan</span>→<span>RSA: m = c<sup>d</sup> mod n</span>'
+    '→<span>Teks asli</span></div>')
 
 
 def _page(title: str, body: str, message: str = "", error: bool = False) -> bytes:
@@ -337,11 +411,12 @@ def _page(title: str, body: str, message: str = "", error: bool = False) -> byte
     html = (f'<!doctype html><html lang="id"><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{escape(title)}</title><style>{CSS}</style>'
-            f'<main><h1>Electronic Health Record</h1>'
-            f'<p>Implementation RSA - Database Field Encryption for Healthcare System.</p>'
+            f'<main><header class="masthead"><div class="brand-mark">RM</div><div>'
+            f'<p class="eyebrow">Arsip klinik · simulasi RSA</p><h1>Ruang Rekam Medis</h1>'
+            f'<p>Pengelolaan catatan pasien dengan enkripsi diagnosis.</p></div></header>'
             f'{FLOW}{msg_html}{body}'
-            f'<small>Simulasi lokal, bukan untuk data pasien nyata atau penggunaan produksi. '
-            f'Private key ditampilkan hanya untuk keperluan demonstrasi edukasi.</small></main></html>')
+            f'<footer class="page-foot"><small>Simulasi pembelajaran. Jangan gunakan data pasien sungguhan. '
+            f'Kunci privat hanya ditampilkan untuk demonstrasi.</small></footer></main></html>')
     return html.encode("utf-8")
 
 
@@ -370,30 +445,30 @@ def _encrypt_result_html(rows: list[dict], public_key: tuple[int, int]) -> str:
         f"<td class='mono'>{r['ascii']}<sup>{e}</sup> mod {n}</td>"
         f"<td class='mono'>{r['cipher']}</td><td>{_steps_cell(r['steps'])}</td></tr>"
         for r in rows)
-    return ("<section class='card'><h2>Hasil enkripsi (per karakter)</h2>"
-            "<table><thead><tr><th>Karakter</th><th>ASCII (m)</th><th>c = m^e mod n</th>"
-            f"<th>Ciphertext (c)</th><th>Square-and-Multiply</th></tr></thead><tbody>{body}</tbody></table>"
+    return ("<section class='card'><h2>Hasil enkripsi per karakter</h2>"
+            "<table><thead><tr><th>Karakter</th><th>Kode ASCII (m)</th><th>Rumus RSA</th>"
+            f"<th>Teks sandi (c)</th><th>Langkah hitung</th></tr></thead><tbody>{body}</tbody></table>"
             "</section>")
 
 
 def _decrypt_result_html(patient: dict, rows: list[dict], key: tuple[int, int], from_input: bool) -> str:
     d, n = key
     plain = "".join(r["char"] for r in rows)
-    source = "key yang kamu masukkan" if from_input else "key milik server"
-    note = ("<p>Jika key yang dimasukkan salah, hasilnya berupa error atau teks yang tidak bermakna.</p>"
+    source = "pasangan kunci yang kamu masukkan" if from_input else "kunci milik server"
+    note = ("<p>Jika kunci yang dimasukkan tidak sesuai, hasilnya mungkin berupa pesan kesalahan atau teks acak.</p>"
             if from_input else "")
     body = "".join(
         f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>{r['cipher']}<sup>{d}</sup> mod {n}</td>"
         f"<td>{r['m']}</td><td>{_show_char(r['char'])}</td><td>{_steps_cell(r['steps'])}</td></tr>"
         for r in rows)
-    return ("<section class='card'><h2>Hasil dekripsi</h2>"
+    return ("<section class='card'><h2>Diagnosis setelah dibuka</h2>"
             f"<p>Pasien ID {patient['id']} — {escape(patient['nama'])}, {patient['umur']} tahun. Memakai {source}.</p>"
             "<div class='grid'>"
-            f"<div class='box'><b>Di database (ciphertext)</b><span class='mono'>{escape(patient['diagnosis'])}</span></div>"
-            f"<div class='box'><b>Hasil dekripsi (plaintext)</b>{escape(plain)}</div></div>"
-            f"{note}<h3>Dekripsi per karakter</h3>"
-            "<table><thead><tr><th>Ciphertext (c)</th><th>m = c^d mod n</th><th>ASCII (m)</th>"
-            f"<th>Karakter</th><th>Square-and-Multiply</th></tr></thead><tbody>{body}</tbody></table></section>")
+            f"<div class='box'><b>Tersimpan sebagai teks sandi</b><span class='mono'>{escape(patient['diagnosis'])}</span></div>"
+            f"<div class='box'><b>Diagnosis terbaca</b>{escape(plain)}</div></div>"
+            f"{note}<h3>Rincian pembukaan per karakter</h3>"
+            "<table><thead><tr><th>Teks sandi (c)</th><th>m = c^d mod n</th><th>Kode ASCII (m)</th>"
+            f"<th>Karakter</th><th>Langkah hitung</th></tr></thead><tbody>{body}</tbody></table></section>")
 
 
 def run_web(host: str, port: int) -> None:
@@ -404,7 +479,7 @@ def run_web(host: str, port: int) -> None:
     def key_section() -> str:
         detail = state["detail"]
         if detail is None:
-            info = "<p>Key pair belum dibuat.</p>"
+            info = "<p>Pasangan kunci belum dibuat.</p>"
         else:
             p, q, n, phi, e, d = (detail[k] for k in ("p", "q", "n", "phi", "e", "d"))
             gcd_ok = gcd(e, phi) == 1
@@ -417,17 +492,17 @@ def run_web(host: str, port: int) -> None:
                 ("phi(n) = (p-1)(q-1)", f"{p - 1} × {q - 1} = {phi}"),
                 ("e", str(e)),
                 ("d = e⁻¹ mod phi(n)", str(d)),
-                ("Public Key (e, n)", f"({e}, {n})"),
-                ("Private Key (d, n)", f"({d}, {n})"),
+                ("Kunci publik (e, n)", f"({e}, {n})"),
+                ("Kunci privat (d, n)", f"({d}, {n})"),
             ]
             kv = "".join(f"<tr><td>{escape(k)}</td><td class='mono'>{escape(v)}</td></tr>" for k, v in items)
             euclid = escape(chr(10).join(extended_euclid_log(e, phi)))
             info = (f"<table class='kv'><tbody>{kv}</tbody></table>"
                     f"<p>Verifikasi: gcd(e, phi) = 1 {ok_badge if gcd_ok else bad_badge} &nbsp; "
                     f"(e × d) mod phi = 1 {ok_badge if inv_ok else bad_badge}</p>"
-                    f"<details><summary>Langkah Extended Euclidean Algorithm</summary><pre>{euclid}</pre></details>")
+                    f"<details><summary>Langkah algoritma Euclid diperluas</summary><pre>{euclid}</pre></details>")
         return ("<section class='card'><h2>1. Pembangkitan kunci RSA</h2>"
-                "<form method='post' action='/keys'><button>Buat key pair</button></form>"
+                "<form method='post' action='/keys'><button>Buat pasangan kunci</button></form>"
                 f"{info}</section>")
 
     def render(enc_html: str = "", dec_html: str = "") -> str:
@@ -435,30 +510,29 @@ def run_web(host: str, port: int) -> None:
             f"<tr><td>{r['id']}</td><td>{escape(r['nama'])}</td><td>{r['umur']}</td>"
             f"<td class='mono'>{escape(r['diagnosis'])}</td></tr>" for r in db)
         return (key_section()
-                + "<section class='card'><h2>2. Input pasien</h2><form method='post' action='/patients'>"
-                  "<div class='grid'><div><label>ID pasien</label><input name='id' type='number' min='1' required>"
+                                + "<section class='card'><h2>2. Tambah catatan pasien</h2><form method='post' action='/patients'>"
+                                    "<div class='grid'><div><label>Nomor pasien</label><input name='id' type='number' min='1' required>"
                   "<label>Nama</label><input name='nama' required></div>"
                   "<div><label>Umur</label><input name='umur' type='number' min='1' required>"
-                  "<label>Diagnosis (ASCII)</label><input name='diagnosis' required></div></div>"
-                  "<button>Simpan terenkripsi</button></form></section>"
+                  "<label>Diagnosis (karakter ASCII)</label><input name='diagnosis' required></div></div>"
+                  "<button>Simpan catatan</button></form></section>"
                 + enc_html
-                + "<section class='card'><h2>3. Database mentah</h2>"
-                  "<p>Nama dan data administratif plaintext; diagnosis ciphertext.</p>"
-                  "<table><thead><tr><th>ID</th><th>Nama</th><th>Umur</th><th>Diagnosis ciphertext</th></tr></thead>"
+                                + "<section class='card'><h2>3. Isi penyimpanan</h2>"
+                                    "<p>Nama dan umur masih terbaca; diagnosis disimpan sebagai teks sandi.</p>"
+                                    "<table><thead><tr><th>ID</th><th>Nama</th><th>Umur</th><th>Diagnosis tersandi</th></tr></thead>"
                   f"<tbody>{rows or empty_row}</tbody></table></section>"
-                + "<section class='card'><h2>4. Dekripsi rekam medis</h2>"
-                  "<form method='post' action='/decrypt'><label>ID pasien</label>"
+                                + "<section class='card'><h2>4. Buka diagnosis</h2>"
+                                    "<form method='post' action='/decrypt'><label>Nomor pasien</label>"
                   "<input name='id' type='number' min='1' required>"
-                  "<div class='grid'><div><label>Private key d (opsional)</label><input name='d'></div>"
+                  "<div class='grid'><div><label>Eksponen privat d (opsional)</label><input name='d'></div>"
                   "<div><label>Modulus n (opsional)</label><input name='n'></div></div>"
-                  "<p><small>Kosongkan d dan n untuk memakai key dari server. Isi keduanya untuk mencoba key lain, "
-                  "misalnya key yang salah, dan lihat hasilnya.</small></p>"
-                  "<button>Dekripsi</button></form></section>"
+                  "<p><small>Kosongkan kedua kolom untuk memakai kunci dari server. Isi keduanya untuk mencoba pasangan kunci lain.</small></p>"
+                  "<button>Buka diagnosis</button></form></section>"
                 + dec_html)
 
     class Handler(BaseHTTPRequestHandler):
         def respond(self, body: str, message: str = "", status: int = 200) -> None:
-            payload = _page("EHR RSA Demo", body, message, error=status >= 400)
+            payload = _page("Ruang Rekam Medis", body, message, error=status >= 400)
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))
@@ -483,14 +557,14 @@ def run_web(host: str, port: int) -> None:
                         raise ValueError("Key tidak dapat diganti selama database berisi data.")
                     state["public"], state["private"], state["detail"] = generate_keys()
                     print(key_generation_log(state["detail"]))
-                    message = "Key pair berhasil dibuat."
+                    message = "Pasangan kunci berhasil dibuat."
                 elif self.path == "/patients":
                     if state["public"] is None:
-                        raise ValueError("Buat key pair terlebih dahulu.")
+                        raise ValueError("Buat pasangan kunci terlebih dahulu.")
                     patient = insert_patient(db, _to_int(get("id"), "ID pasien"), get("nama"),
                                              _to_int(get("umur"), "Umur"), get("diagnosis"), state["public"])
                     enc_html = _encrypt_result_html(encrypt_rows(get("diagnosis"), state["public"]), state["public"])
-                    message = f"Pasien {patient['id']} tersimpan dengan diagnosis terenkripsi."
+                    message = f"Catatan pasien {patient['id']} tersimpan. Diagnosis telah disandikan."
                 elif self.path == "/decrypt":
                     pid = _to_int(get("id"), "ID pasien")
                     patient = next((r for r in db if r["id"] == pid), None)
@@ -504,11 +578,11 @@ def run_web(host: str, port: int) -> None:
                         key = (_to_int(d_raw, "Nilai d"), _to_int(n_raw, "Nilai n"))
                     else:
                         if state["private"] is None:
-                            raise ValueError("Buat key pair terlebih dahulu.")
+                            raise ValueError("Buat pasangan kunci terlebih dahulu.")
                         key = state["private"]
                     rows = decrypt_rows(patient["diagnosis"], key)
                     dec_html = _decrypt_result_html(patient, rows, key, from_input)
-                    message = "Dekripsi selesai."
+                    message = "Diagnosis berhasil dibuka."
                 else:
                     raise ValueError("Rute tidak ditemukan.")
                 self.respond(render(enc_html, dec_html), message)
