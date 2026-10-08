@@ -1,9 +1,8 @@
-"""Educational EHR demo (versi RBAC): manual RSA, CLI, dan web localhost dengan login 3 role."""
+"""Educational EHR demo: manual RSA, CLI, and a localhost web UI that shows every RSA stage."""
 
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
 from html import escape
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from random import SystemRandom
@@ -11,64 +10,6 @@ from urllib.parse import parse_qs
 
 
 _RNG = SystemRandom()
-
-# False: web menyembunyikan p, q, phi, d, dan langkah bit dekripsi (menjaga separation of duties).
-# True : web menampilkan semua tahap RSA. Pakai hanya untuk screenshot/demo.
-SHOW_SECRETS = False
-
-
-# ----------------------------------------------------------------------------
-# Auth manual (tanpa hashlib/secrets). Hanya dipakai oleh versi web.
-# ----------------------------------------------------------------------------
-
-PERMISSIONS = {
-    "admin": {"keys", "view_raw", "audit"},
-    "dokter": {"insert", "view_raw", "decrypt"},
-    "staf": {"insert", "view_raw"},
-}
-
-ROLE_INFO = {
-    "admin": "Mengelola kunci RSA dan memantau audit log. Tidak dapat mendekripsi data pasien.",
-    "dokter": "Memasukkan data pasien dan mendekripsi diagnosis dengan private key.",
-    "staf": "Memasukkan data pasien (enkripsi dengan public key). Tidak dapat mendekripsi.",
-}
-
-USERS: dict[str, dict] = {}
-SESSIONS: dict[str, str] = {}  # token -> username
-
-
-def toy_hash(password: str, salt: str) -> int:
-    """Hash buatan sendiri (djb2 berulang). BUKAN hash kriptografis, hanya demo."""
-    h = 5381
-    for _ in range(1000):
-        for ch in salt + password:
-            h = (h * 33 + ord(ch)) % (1 << 64)
-    return h
-
-
-def add_user(username: str, password: str, role: str) -> None:
-    salt = format(_RNG.getrandbits(64), "016x")
-    USERS[username] = {"salt": salt, "hash": toy_hash(password, salt), "role": role}
-
-
-def verify_user(username: str, password: str) -> str | None:
-    user = USERS.get(username)
-    if user is None or toy_hash(password, user["salt"]) != user["hash"]:
-        return None
-    return user["role"]
-
-
-def new_session_token() -> str:
-    return format(_RNG.getrandbits(128), "032x")
-
-
-def parse_cookie(header: str) -> dict[str, str]:
-    result = {}
-    for part in header.split(";"):
-        if "=" in part:
-            key, _, value = part.strip().partition("=")
-            result[key] = value
-    return result
 
 
 # ----------------------------------------------------------------------------
@@ -148,7 +89,6 @@ def extended_euclid_log(a: int, b: int) -> list[str]:
 
 
 def key_generation_log(detail: dict[str, int]) -> str:
-    """Log lengkap (berisi d). Dicetak di terminal."""
     p, q, n = detail["p"], detail["q"], detail["n"]
     phi, e, d = detail["phi"], detail["e"], detail["d"]
     return "\n".join((
@@ -247,15 +187,15 @@ def encrypt_rows(plaintext: str, public_key: tuple[int, int]) -> list[dict]:
     return rows
 
 
-def decrypt_rows(ciphertext_str: str, private_key: tuple[int, int], reveal: bool) -> list[dict]:
-    """Dekripsi per karakter terstruktur. Jika reveal=False, langkah bit (yang membocorkan d) tidak disimpan."""
+def decrypt_rows(ciphertext_str: str, private_key: tuple[int, int]) -> list[dict]:
+    """Dekripsi per karakter dalam bentuk terstruktur (untuk tabel di web)."""
     d, n = private_key
     rows = []
     for cipher in _parse_ciphertext(ciphertext_str, n):
         steps: list[str] = []
-        value = mod_pow(cipher, d, n, steps if reveal else None)
+        value = mod_pow(cipher, d, n, steps)
         if value > 127:
-            raise ValueError("Hasil dekripsi bukan karakter ASCII yang valid.")
+            raise ValueError("Hasil dekripsi bukan karakter ASCII yang valid (key kemungkinan salah).")
         rows.append({"cipher": cipher, "m": value, "char": chr(value), "steps": steps})
     return rows
 
@@ -294,7 +234,7 @@ def print_database(db: list[dict]) -> None:
 
 
 # ----------------------------------------------------------------------------
-# CLI (tanpa login/role)
+# CLI
 # ----------------------------------------------------------------------------
 
 def _positive_int(prompt: str) -> int:
@@ -362,13 +302,7 @@ h2{font-size:18px;margin:0 0 12px}
 h3{font-size:15px;margin:14px 0 6px}
 p{color:#52616d;margin:6px 0}
 .card{background:white;border:1px solid #dfe6eb;border-radius:10px;padding:18px;margin:16px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:16px 0}
-.stat{background:white;border:1px solid #dfe6eb;border-radius:10px;padding:14px 18px}
-.stat b{display:block;font-size:22px}
-.stat span{font-size:13px;color:#52616d}
-.userbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.userbar form{margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 label{display:block;margin:9px 0 4px;font-weight:600}
 input{width:100%;padding:9px;border:1px solid #cbd5dc;border-radius:6px}
 button{background:#145c78;color:white;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;margin-top:12px}
@@ -382,12 +316,10 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7f8;padding:12px;
 .msg.ok{color:#1b6b3a}
 .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0}
 .flow span{background:#e4eef3;border:1px solid #cfdde5;border-radius:6px;padding:4px 10px;font-size:13px}
-.kv td:first-child{width:210px;font-weight:600}
+.kv td:first-child{width:200px;font-weight:600}
 .badge{display:inline-block;border-radius:6px;padding:1px 8px;font-size:13px;font-weight:600}
 .badge.ok{background:#dff3e6;color:#1b6b3a}
 .badge.bad{background:#fbe0dc;color:#9b321f}
-.badge.role{background:#e4eef3;color:#145c78}
-.secret{color:#9b321f;font-style:italic}
 .box{background:#f5f7f8;border-radius:8px;padding:12px}
 .box b{display:block;font-size:13px;color:#52616d;margin-bottom:4px}
 details summary{cursor:pointer;color:#145c78}
@@ -406,14 +338,11 @@ def _page(title: str, body: str, message: str = "", error: bool = False) -> byte
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{escape(title)}</title><style>{CSS}</style>'
             f'<main><h1>Electronic Health Record</h1>'
-            f'<p>Demo edukasi RSA manual — data disimpan di memori selama server berjalan.</p>'
+            f'<p>Implementation RSA - Database Field Encryption for Healthcare System.</p>'
             f'{FLOW}{msg_html}{body}'
-            f'<small>Simulasi lokal, bukan untuk data pasien nyata atau penggunaan produksi.</small></main></html>')
+            f'<small>Simulasi lokal, bukan untuk data pasien nyata atau penggunaan produksi. '
+            f'Private key ditampilkan hanya untuk keperluan demonstrasi edukasi.</small></main></html>')
     return html.encode("utf-8")
-
-
-def _card(title: str, inner: str) -> str:
-    return f"<section class='card'><h2>{title}</h2>{inner}</section>"
 
 
 def _show_char(char: str) -> str:
@@ -441,94 +370,91 @@ def _encrypt_result_html(rows: list[dict], public_key: tuple[int, int]) -> str:
         f"<td class='mono'>{r['ascii']}<sup>{e}</sup> mod {n}</td>"
         f"<td class='mono'>{r['cipher']}</td><td>{_steps_cell(r['steps'])}</td></tr>"
         for r in rows)
-    return _card("Hasil enkripsi (per karakter)",
-                 "<table><thead><tr><th>Karakter</th><th>ASCII (m)</th><th>c = m^e mod n</th>"
-                 f"<th>Ciphertext (c)</th><th>Square-and-Multiply</th></tr></thead><tbody>{body}</tbody></table>")
+    return ("<section class='card'><h2>Hasil enkripsi (per karakter)</h2>"
+            "<table><thead><tr><th>Karakter</th><th>ASCII (m)</th><th>c = m^e mod n</th>"
+            f"<th>Ciphertext (c)</th><th>Square-and-Multiply</th></tr></thead><tbody>{body}</tbody></table>"
+            "</section>")
 
 
-def _decrypt_result_html(patient: dict, rows: list[dict], key: tuple[int, int]) -> str:
+def _decrypt_result_html(patient: dict, rows: list[dict], key: tuple[int, int], from_input: bool) -> str:
     d, n = key
     plain = "".join(r["char"] for r in rows)
-    if SHOW_SECRETS:
-        head = ("<th>Ciphertext (c)</th><th>m = c^d mod n</th><th>ASCII (m)</th>"
-                "<th>Karakter</th><th>Square-and-Multiply</th>")
-        body = "".join(
-            f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>{r['cipher']}<sup>{d}</sup> mod {n}</td>"
-            f"<td>{r['m']}</td><td>{_show_char(r['char'])}</td><td>{_steps_cell(r['steps'])}</td></tr>"
-            for r in rows)
-    else:
-        head = "<th>Ciphertext (c)</th><th>Operasi</th><th>ASCII (m)</th><th>Karakter</th>"
-        body = "".join(
-            f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>c<sup>d</sup> mod {n} "
-            f"<span class='secret'>(d tidak ditampilkan)</span></td>"
-            f"<td>{r['m']}</td><td>{_show_char(r['char'])}</td></tr>"
-            for r in rows)
-    return _card(
-        "Hasil dekripsi",
-        f"<p>Pasien ID {patient['id']} — {escape(patient['nama'])}, {patient['umur']} tahun.</p>"
-        "<div class='grid'>"
-        f"<div class='box'><b>Di database (ciphertext)</b><span class='mono'>{escape(patient['diagnosis'])}</span></div>"
-        f"<div class='box'><b>Hasil dekripsi (plaintext)</b>{escape(plain)}</div></div>"
-        f"<h3>Dekripsi per karakter</h3><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>")
+    source = "key yang kamu masukkan" if from_input else "key milik server"
+    note = ("<p>Jika key yang dimasukkan salah, hasilnya berupa error atau teks yang tidak bermakna.</p>"
+            if from_input else "")
+    body = "".join(
+        f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>{r['cipher']}<sup>{d}</sup> mod {n}</td>"
+        f"<td>{r['m']}</td><td>{_show_char(r['char'])}</td><td>{_steps_cell(r['steps'])}</td></tr>"
+        for r in rows)
+    return ("<section class='card'><h2>Hasil dekripsi</h2>"
+            f"<p>Pasien ID {patient['id']} — {escape(patient['nama'])}, {patient['umur']} tahun. Memakai {source}.</p>"
+            "<div class='grid'>"
+            f"<div class='box'><b>Di database (ciphertext)</b><span class='mono'>{escape(patient['diagnosis'])}</span></div>"
+            f"<div class='box'><b>Hasil dekripsi (plaintext)</b>{escape(plain)}</div></div>"
+            f"{note}<h3>Dekripsi per karakter</h3>"
+            "<table><thead><tr><th>Ciphertext (c)</th><th>m = c^d mod n</th><th>ASCII (m)</th>"
+            f"<th>Karakter</th><th>Square-and-Multiply</th></tr></thead><tbody>{body}</tbody></table></section>")
 
 
 def run_web(host: str, port: int) -> None:
     db: list[dict] = []
-    audit: list[tuple[str, str, str]] = []  # (waktu, pelaku, aksi)
     state: dict = {"public": None, "private": None, "detail": None}
     empty_row = '<tr><td colspan="4">Belum ada data.</td></tr>'
 
-    add_user("admin", "admin123", "admin")
-    add_user("dokter", "dokter123", "dokter")
-    add_user("staf", "staf123", "staf")
-
-    def note(actor: str, text: str) -> None:
-        audit.append((datetime.now().strftime("%H:%M:%S"), actor, text))
-
     def key_section() -> str:
-        button = "<form method='post' action='/keys'><button>Buat key pair</button></form>"
         detail = state["detail"]
         if detail is None:
-            return _card("Manajemen kunci RSA", button + "<p>Key pair belum dibuat.</p>")
-        p, q, n, phi, e, d = (detail[k] for k in ("p", "q", "n", "phi", "e", "d"))
-        ok_badge = '<span class="badge ok">terpenuhi</span>'
-        bad_badge = '<span class="badge bad">gagal</span>'
-        gcd_ok = gcd(e, phi) == 1
-        inv_ok = (e * d) % phi == 1
-        secret = "<span class='secret'>disembunyikan</span>"
-        if SHOW_SECRETS:
-            items = [("p", str(p)), ("q", str(q)), ("n = p × q", f"{p} × {q} = {n}"),
-                     ("phi(n) = (p-1)(q-1)", f"{p - 1} × {q - 1} = {phi}"), ("e", str(e)),
-                     ("d = e⁻¹ mod phi(n)", str(d)), ("Public Key (e, n)", f"({e}, {n})"),
-                     ("Private Key (d, n)", f"({d}, {n})")]
-            kv = "".join(f"<tr><td>{escape(k)}</td><td class='mono'>{escape(v)}</td></tr>" for k, v in items)
-            extra = ("<details><summary>Langkah Extended Euclidean Algorithm</summary>"
-                     f"<pre>{escape(chr(10).join(extended_euclid_log(e, phi)))}</pre></details>")
+            info = "<p>Key pair belum dibuat.</p>"
         else:
-            items = [("n = p × q", str(n)), ("e", str(e)), ("Public Key (e, n)", f"({e}, {n})")]
+            p, q, n, phi, e, d = (detail[k] for k in ("p", "q", "n", "phi", "e", "d"))
+            gcd_ok = gcd(e, phi) == 1
+            inv_ok = (e * d) % phi == 1
+            ok_badge = '<span class="badge ok">terpenuhi</span>'
+            bad_badge = '<span class="badge bad">gagal</span>'
+            items = [
+                ("p", str(p)), ("q", str(q)),
+                ("n = p × q", f"{p} × {q} = {n}"),
+                ("phi(n) = (p-1)(q-1)", f"{p - 1} × {q - 1} = {phi}"),
+                ("e", str(e)),
+                ("d = e⁻¹ mod phi(n)", str(d)),
+                ("Public Key (e, n)", f"({e}, {n})"),
+                ("Private Key (d, n)", f"({d}, {n})"),
+            ]
             kv = "".join(f"<tr><td>{escape(k)}</td><td class='mono'>{escape(v)}</td></tr>" for k, v in items)
-            kv += (f"<tr><td>p, q, phi(n)</td><td>{secret}</td></tr>"
-                   f"<tr><td>Private Key (d, n)</td><td>{secret} (disimpan di server)</td></tr>")
-            extra = "<p><small>Log lengkap pembangkitan key dicetak di terminal server.</small></p>"
-        verif = (f"<p>Verifikasi: gcd(e, phi) = 1 {ok_badge if gcd_ok else bad_badge} &nbsp; "
-                 f"(e × d) mod phi = 1 {ok_badge if inv_ok else bad_badge}</p>")
-        return _card("Manajemen kunci RSA", f"{button}<table class='kv'><tbody>{kv}</tbody></table>{verif}{extra}")
+            euclid = escape(chr(10).join(extended_euclid_log(e, phi)))
+            info = (f"<table class='kv'><tbody>{kv}</tbody></table>"
+                    f"<p>Verifikasi: gcd(e, phi) = 1 {ok_badge if gcd_ok else bad_badge} &nbsp; "
+                    f"(e × d) mod phi = 1 {ok_badge if inv_ok else bad_badge}</p>"
+                    f"<details><summary>Langkah Extended Euclidean Algorithm</summary><pre>{euclid}</pre></details>")
+        return ("<section class='card'><h2>1. Pembangkitan kunci RSA</h2>"
+                "<form method='post' action='/keys'><button>Buat key pair</button></form>"
+                f"{info}</section>")
 
-    def stats_section() -> str:
-        key_status = "Sudah dibuat" if state["detail"] else "Belum dibuat"
-        return ("<div class='stats'>"
-                f"<div class='stat'><b>{key_status}</b><span>Status key pair</span></div>"
-                f"<div class='stat'><b>{len(db)}</b><span>Jumlah record pasien</span></div>"
-                f"<div class='stat'><b>{len(audit)}</b><span>Catatan audit</span></div></div>")
-
-    def audit_section() -> str:
+    def render(enc_html: str = "", dec_html: str = "") -> str:
         rows = "".join(
-            f"<tr><td>{i}</td><td>{escape(t)}</td><td>{escape(who)}</td><td>{escape(act)}</td></tr>"
-            for i, (t, who, act) in enumerate(audit, 1))
-        empty = '<tr><td colspan="4">Belum ada catatan.</td></tr>'
-        return _card("Audit log",
-                     "<table><thead><tr><th>#</th><th>Waktu</th><th>Pelaku</th><th>Aksi</th></tr></thead>"
-                     f"<tbody>{rows or empty}</tbody></table>")
+            f"<tr><td>{r['id']}</td><td>{escape(r['nama'])}</td><td>{r['umur']}</td>"
+            f"<td class='mono'>{escape(r['diagnosis'])}</td></tr>" for r in db)
+        return (key_section()
+                + "<section class='card'><h2>2. Input pasien</h2><form method='post' action='/patients'>"
+                  "<div class='grid'><div><label>ID pasien</label><input name='id' type='number' min='1' required>"
+                  "<label>Nama</label><input name='nama' required></div>"
+                  "<div><label>Umur</label><input name='umur' type='number' min='1' required>"
+                  "<label>Diagnosis (ASCII)</label><input name='diagnosis' required></div></div>"
+                  "<button>Simpan terenkripsi</button></form></section>"
+                + enc_html
+                + "<section class='card'><h2>3. Database mentah</h2>"
+                  "<p>Nama dan data administratif plaintext; diagnosis ciphertext.</p>"
+                  "<table><thead><tr><th>ID</th><th>Nama</th><th>Umur</th><th>Diagnosis ciphertext</th></tr></thead>"
+                  f"<tbody>{rows or empty_row}</tbody></table></section>"
+                + "<section class='card'><h2>4. Dekripsi rekam medis</h2>"
+                  "<form method='post' action='/decrypt'><label>ID pasien</label>"
+                  "<input name='id' type='number' min='1' required>"
+                  "<div class='grid'><div><label>Private key d (opsional)</label><input name='d'></div>"
+                  "<div><label>Modulus n (opsional)</label><input name='n'></div></div>"
+                  "<p><small>Kosongkan d dan n untuk memakai key dari server. Isi keduanya untuk mencoba key lain, "
+                  "misalnya key yang salah, dan lihat hasilnya.</small></p>"
+                  "<button>Dekripsi</button></form></section>"
+                + dec_html)
 
     class Handler(BaseHTTPRequestHandler):
         def respond(self, body: str, message: str = "", status: int = 200) -> None:
@@ -540,75 +466,8 @@ def run_web(host: str, port: int) -> None:
             self.end_headers()
             self.wfile.write(payload)
 
-        def redirect(self, location: str, cookie: str | None = None) -> None:
-            self.send_response(303)
-            self.send_header("Location", location)
-            self.send_header("Content-Length", "0")
-            if cookie:
-                self.send_header("Set-Cookie", cookie)
-            self.end_headers()
-
-        def current_user(self) -> str | None:
-            token = parse_cookie(self.headers.get("Cookie", "")).get("sid", "")
-            return SESSIONS.get(token)
-
-        def role_of(self, user: str | None) -> str | None:
-            return USERS[user]["role"] if user else None
-
-        def require(self, role: str | None, perm: str) -> None:
-            if role is None or perm not in PERMISSIONS[role]:
-                raise PermissionError("Akses ditolak: role Anda tidak punya izin untuk aksi ini.")
-
-        def _login_form(self) -> str:
-            return _card("Login",
-                         "<form method='post' action='/login'>"
-                         "<label>Username</label><input name='username' required>"
-                         "<label>Password</label><input name='password' type='password' required>"
-                         "<button>Masuk</button></form>"
-                         "<p><small>Akun demo: admin/admin123, dokter/dokter123, staf/staf123</small></p>")
-
-        def _body(self, user: str | None, enc_html: str = "", dec_html: str = "") -> str:
-            role = self.role_of(user)
-            if role is None:
-                return self._login_form()
-            perms = PERMISSIONS[role]
-            out = ["<section class='card userbar'><div>"
-                   f"<b>{escape(user)}</b> <span class='badge role'>{escape(role)}</span>"
-                   f"<p>{escape(ROLE_INFO[role])}</p></div>"
-                   "<form method='post' action='/logout'><button>Logout</button></form></section>"]
-            if "keys" in perms:
-                out.append(stats_section())
-                out.append(key_section())
-            if "insert" in perms:
-                out.append(_card("Input pasien",
-                                 "<form method='post' action='/patients'><div class='grid'><div>"
-                                 "<label>ID pasien</label><input name='id' type='number' min='1' required>"
-                                 "<label>Nama</label><input name='nama' required></div><div>"
-                                 "<label>Umur</label><input name='umur' type='number' min='1' required>"
-                                 "<label>Diagnosis (ASCII)</label><input name='diagnosis' required></div></div>"
-                                 "<button>Simpan terenkripsi</button></form>"))
-                out.append(enc_html)
-            if "view_raw" in perms:
-                rows = "".join(
-                    f"<tr><td>{r['id']}</td><td>{escape(r['nama'])}</td><td>{r['umur']}</td>"
-                    f"<td class='mono'>{escape(r['diagnosis'])}</td></tr>" for r in db)
-                out.append(_card("Database mentah",
-                                 "<p>Nama dan data administratif plaintext; diagnosis ciphertext.</p>"
-                                 "<table><thead><tr><th>ID</th><th>Nama</th><th>Umur</th>"
-                                 "<th>Diagnosis ciphertext</th></tr></thead>"
-                                 f"<tbody>{rows or empty_row}</tbody></table>"))
-            if "decrypt" in perms:
-                out.append(_card("Dekripsi rekam medis",
-                                 "<form method='post' action='/decrypt'><label>ID pasien</label>"
-                                 "<input name='id' type='number' min='1' required>"
-                                 "<button>Dekripsi</button></form>"))
-                out.append(dec_html)
-            if "audit" in perms:
-                out.append(audit_section())
-            return "".join(out)
-
         def do_GET(self) -> None:
-            self.respond(self._body(self.current_user()))
+            self.respond(render())
 
         def do_POST(self) -> None:
             try:
@@ -617,73 +476,50 @@ def run_web(host: str, port: int) -> None:
                 length = 0
             values = parse_qs(self.rfile.read(length).decode("utf-8", "replace"), keep_blank_values=True)
             get = lambda name: values.get(name, [""])[0].strip()
-
-            if self.path == "/login":
-                username = get("username")
-                role = verify_user(username, get("password"))
-                if role is None:
-                    note("anonim", f"login gagal untuk username '{username}'")
-                    self.respond(self._login_form(), "Username atau password salah.", 401)
-                    return
-                token = new_session_token()
-                SESSIONS[token] = username
-                note(f"{username} ({role})", "login")
-                self.redirect("/", f"sid={token}; HttpOnly; SameSite=Strict; Path=/")
-                return
-            if self.path == "/logout":
-                SESSIONS.pop(parse_cookie(self.headers.get("Cookie", "")).get("sid", ""), None)
-                self.redirect("/", "sid=; Max-Age=0; Path=/")
-                return
-
-            user = self.current_user()
-            role = self.role_of(user)
-            actor = f"{user} ({role})" if user else "anonim"
             enc_html = dec_html = ""
             try:
                 if self.path == "/keys":
-                    self.require(role, "keys")
                     if db:
                         raise ValueError("Key tidak dapat diganti selama database berisi data.")
                     state["public"], state["private"], state["detail"] = generate_keys()
-                    print(key_generation_log(state["detail"]))  # log lengkap hanya di terminal server
-                    note(actor, "membuat key pair")
+                    print(key_generation_log(state["detail"]))
                     message = "Key pair berhasil dibuat."
                 elif self.path == "/patients":
-                    self.require(role, "insert")
                     if state["public"] is None:
-                        raise ValueError("Buat key pair terlebih dahulu (oleh admin).")
+                        raise ValueError("Buat key pair terlebih dahulu.")
                     patient = insert_patient(db, _to_int(get("id"), "ID pasien"), get("nama"),
                                              _to_int(get("umur"), "Umur"), get("diagnosis"), state["public"])
                     enc_html = _encrypt_result_html(encrypt_rows(get("diagnosis"), state["public"]), state["public"])
-                    note(actor, f"menyimpan pasien ID {patient['id']}")
                     message = f"Pasien {patient['id']} tersimpan dengan diagnosis terenkripsi."
                 elif self.path == "/decrypt":
-                    self.require(role, "decrypt")
-                    if state["private"] is None:
-                        raise ValueError("Key pair belum dibuat oleh admin.")
                     pid = _to_int(get("id"), "ID pasien")
                     patient = next((r for r in db if r["id"] == pid), None)
                     if patient is None:
                         raise ValueError("ID pasien tidak ditemukan.")
-                    rows = decrypt_rows(patient["diagnosis"], state["private"], SHOW_SECRETS)
-                    dec_html = _decrypt_result_html(patient, rows, state["private"])
-                    note(actor, f"mendekripsi pasien ID {pid}")
+                    d_raw, n_raw = get("d"), get("n")
+                    from_input = bool(d_raw or n_raw)
+                    if from_input:
+                        if not (d_raw and n_raw):
+                            raise ValueError("Isi d dan n sekaligus, atau kosongkan keduanya.")
+                        key = (_to_int(d_raw, "Nilai d"), _to_int(n_raw, "Nilai n"))
+                    else:
+                        if state["private"] is None:
+                            raise ValueError("Buat key pair terlebih dahulu.")
+                        key = state["private"]
+                    rows = decrypt_rows(patient["diagnosis"], key)
+                    dec_html = _decrypt_result_html(patient, rows, key, from_input)
                     message = "Dekripsi selesai."
                 else:
                     raise ValueError("Rute tidak ditemukan.")
-                self.respond(self._body(user, enc_html, dec_html), message)
-            except PermissionError as exc:
-                note(actor, f"AKSES DITOLAK ke {self.path}")
-                self.respond(self._body(user), str(exc), 403)
+                self.respond(render(enc_html, dec_html), message)
             except (ValueError, TypeError) as exc:
-                self.respond(self._body(user), str(exc), 400)
+                self.respond(render(), str(exc), 400)
 
         def log_message(self, format: str, *args: object) -> None:
             pass
 
     server = HTTPServer((host, port), Handler)
     print(f"Web EHR berjalan di http://{host}:{port} (Ctrl+C untuk berhenti)")
-    print("Akun demo: admin/admin123, dokter/dokter123, staf/staf123")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -706,3 +542,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
