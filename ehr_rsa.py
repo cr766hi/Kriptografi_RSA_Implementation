@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 from datetime import datetime
 from html import escape
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -12,9 +13,9 @@ from urllib.parse import parse_qs
 
 _RNG = SystemRandom()
 
-# False: web menyembunyikan p, q, phi, d, dan langkah bit dekripsi (menjaga separation of duties).
-# True : web menampilkan semua tahap RSA. Pakai hanya untuk screenshot/demo.
-SHOW_SECRETS = False
+# Mode transparan untuk demo: web menampilkan p, q, phi, d, dan langkah RSA.
+# Ini cocok untuk presentasi pembelajaran, bukan penggunaan produksi.
+SHOW_SECRETS = True
 
 
 # ----------------------------------------------------------------------------
@@ -139,11 +140,11 @@ def extended_euclid_log(a: int, b: int) -> list[str]:
     rows, old_r, r, old_s, s, old_t, t = [], a, b, 1, 0, 0, 1
     while r:
         q = old_r // r
-        rows.append(f"{old_r} = {q} × {r} + {old_r % r}")
+        rows.append(f"{old_r} = {q} x {r} + {old_r % r}")
         old_r, r = r, old_r - q * r
         old_s, s = s, old_s - q * s
         old_t, t = t, old_t - q * t
-    rows.append(f"{old_r} = {old_s} × {a} + ({old_t}) × {b}")
+    rows.append(f"{old_r} = {old_s} x {a} + ({old_t}) x {b}")
     return rows
 
 
@@ -153,10 +154,10 @@ def key_generation_log(detail: dict[str, int]) -> str:
     phi, e, d = detail["phi"], detail["e"], detail["d"]
     return "\n".join((
         "=== RSA KEY GENERATION ===", "", f"p = {p}", f"q = {q}", "",
-        f"n = p × q = {p} × {q} = {n}",
-        f"phi(n) = (p-1)(q-1) = {p-1} × {q-1} = {phi}", "",
+        f"n = p x q = {p} x {q} = {n}",
+        f"phi(n) = (p-1)(q-1) = {p-1} x {q-1} = {phi}", "",
         "Extended Euclidean Algorithm untuk e dan phi(n):", *extended_euclid_log(e, phi), "",
-        f"gcd({e}, {phi}) = 1", f"d = e⁻¹ mod phi(n) = {d}",
+        f"gcd({e}, {phi}) = 1", f"d = e^-1 mod phi(n) = {d}",
         f"Public Key  = ({e}, {n})", f"Private Key = ({d}, {n})",
     ))
 
@@ -182,7 +183,7 @@ def text_to_ascii(text: str) -> list[int]:
     """Convert characters to ASCII code points; reject non-ASCII input."""
     values = [ord(char) for char in text]
     if any(value > 127 for value in values):
-        raise ValueError("Diagnosis harus berisi karakter ASCII (0–127).")
+        raise ValueError("Diagnosis harus berisi karakter ASCII (0-127).")
     return values
 
 
@@ -280,7 +281,7 @@ def insert_patient(db: list[dict], patient_id: int, nama: str, umur: int, diagno
     patient = {"id": patient_id, "nama": nama.strip(), "umur": umur, "diagnosis": ciphertext}
     db.append(patient)
     if log is not None:
-        log.extend(["", "Plaintext → ASCII → RSA Encryption → Ciphertext → Database", f"Tersimpan: {patient}"])
+        log.extend(["", "Plaintext -> ASCII -> RSA Encryption -> Ciphertext -> Database", f"Tersimpan: {patient}"])
     return patient
 
 
@@ -312,7 +313,7 @@ def run_cli() -> None:
     db: list[dict] = []
     public_key = private_key = None
     while True:
-        print("\n" + "=" * 54 + "\n ELECTRONIC HEALTH RECORD — RSA FIELD ENCRYPTION\n" + "=" * 54)
+        print("\n" + "=" * 54 + "\n ELECTRONIC HEALTH RECORD - RSA FIELD ENCRYPTION\n" + "=" * 54)
         print("1. Generate RSA Key Pair\n2. Input Rekam Medis Pasien\n3. Lihat Tabel Database Mentah\n4. Lihat Rekam Medis Terdekripsi\n5. Keluar")
         choice = input("\nPilih menu: ").strip()
         try:
@@ -474,7 +475,7 @@ def _decrypt_result_html(patient: dict, rows: list[dict], key: tuple[int, int]) 
     d, n = key
     plain = "".join(r["char"] for r in rows)
     if SHOW_SECRETS:
-        head = ("<th>Teks sandi (c)</th><th>m = c^d mod n</th><th>Kode ASCII (m)</th>"
+        head = ("<th>Teks sandi (c)</th><th>m = c^d mod n</th><th>m (plaintext ASCII)</th>"
             "<th>Karakter</th><th>Langkah hitung</th>")
         body = "".join(
             f"<tr><td class='mono'>{r['cipher']}</td><td class='mono'>{r['cipher']}<sup>{d}</sup> mod {n}</td>"
@@ -496,10 +497,61 @@ def _decrypt_result_html(patient: dict, rows: list[dict], key: tuple[int, int]) 
         f"<h3>Rincian pembukaan per karakter</h3><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>")
 
 
-def run_web(host: str, port: int) -> None:
-    db: list[dict] = []
+def _open_database(path: str) -> sqlite3.Connection:
+    """Open the shared SQLite store and create its tables when needed."""
+    connection = sqlite3.connect(path)
+    connection.row_factory = sqlite3.Row
+    connection.execute("""CREATE TABLE IF NOT EXISTS patients (
+        id INTEGER PRIMARY KEY,
+        nama TEXT NOT NULL,
+        umur INTEGER NOT NULL,
+        diagnosis TEXT NOT NULL
+    )""")
+    connection.execute("""CREATE TABLE IF NOT EXISTS rsa_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        p INTEGER NOT NULL, q INTEGER NOT NULL, n INTEGER NOT NULL,
+        phi INTEGER NOT NULL, e INTEGER NOT NULL, d INTEGER NOT NULL
+    )""")
+    connection.commit()
+    return connection
+
+
+def _load_patients(connection: sqlite3.Connection) -> list[dict]:
+    return [dict(row) for row in connection.execute(
+        "SELECT id, nama, umur, diagnosis FROM patients ORDER BY id")]
+
+
+def _load_key_state(connection: sqlite3.Connection) -> tuple[tuple[int, int], tuple[int, int], dict[str, int]] | None:
+    row = connection.execute("SELECT p, q, n, phi, e, d FROM rsa_state WHERE id = 1").fetchone()
+    if row is None:
+        return None
+    detail = {key: row[key] for key in ("p", "q", "n", "phi", "e", "d")}
+    return (detail["e"], detail["n"]), (detail["d"], detail["n"]), detail
+
+
+def _save_key_state(connection: sqlite3.Connection, detail: dict[str, int]) -> None:
+    connection.execute("""INSERT INTO rsa_state (id, p, q, n, phi, e, d)
+        VALUES (1, ?, ?, ?, ?, ?, ?)""",
+        tuple(detail[key] for key in ("p", "q", "n", "phi", "e", "d")))
+    connection.commit()
+
+
+def _save_patient(connection: sqlite3.Connection, patient: dict) -> None:
+    connection.execute(
+        "INSERT INTO patients (id, nama, umur, diagnosis) VALUES (?, ?, ?, ?)",
+        (patient["id"], patient["nama"], patient["umur"], patient["diagnosis"]),
+    )
+    connection.commit()
+
+
+def run_web(host: str, port: int, database_path: str = "ehr_rsa.db") -> None:
+    storage = _open_database(database_path)
+    db: list[dict] = _load_patients(storage)
     audit: list[tuple[str, str, str]] = []  # (waktu, pelaku, aksi)
-    state: dict = {"public": None, "private": None, "detail": None}
+    stored_keys = _load_key_state(storage)
+    state: dict = {"public": stored_keys[0] if stored_keys else None,
+                   "private": stored_keys[1] if stored_keys else None,
+                   "detail": stored_keys[2] if stored_keys else None}
     empty_row = '<tr><td colspan="4">Belum ada data.</td></tr>'
 
     add_user("admin", "admin123", "admin")
@@ -670,9 +722,10 @@ def run_web(host: str, port: int) -> None:
             try:
                 if self.path == "/keys":
                     self.require(role, "keys")
-                    if db:
+                    if db or state["detail"]:
                         raise ValueError("Key tidak dapat diganti selama database berisi data.")
                     state["public"], state["private"], state["detail"] = generate_keys()
+                    _save_key_state(storage, state["detail"])
                     print(key_generation_log(state["detail"]))  # log lengkap hanya di terminal server
                     note(actor, "membuat key pair")
                     message = "Pasangan kunci berhasil dibuat."
@@ -682,6 +735,7 @@ def run_web(host: str, port: int) -> None:
                         raise ValueError("Buat key pair terlebih dahulu (oleh admin).")
                     patient = insert_patient(db, _to_int(get("id"), "ID pasien"), get("nama"),
                                              _to_int(get("umur"), "Umur"), get("diagnosis"), state["public"])
+                    _save_patient(storage, patient)
                     enc_html = _encrypt_result_html(encrypt_rows(get("diagnosis"), state["public"]), state["public"])
                     note(actor, f"menyimpan pasien ID {patient['id']}")
                     message = f"Pasien {patient['id']} tersimpan dengan diagnosis terenkripsi."
@@ -717,6 +771,7 @@ def run_web(host: str, port: int) -> None:
     except KeyboardInterrupt:
         print("\nServer dihentikan.")
     finally:
+        storage.close()
         server.server_close()
 
 
@@ -725,9 +780,10 @@ def main() -> None:
     parser.add_argument("--web", action="store_true", help="jalankan UI web localhost")
     parser.add_argument("--host", default="127.0.0.1", help="alamat bind web (default: localhost)")
     parser.add_argument("--port", type=int, default=8000, help="port web (default: 8000)")
+    parser.add_argument("--database", default="ehr_rsa.db", help="file SQLite untuk web (default: ehr_rsa.db)")
     args = parser.parse_args()
     if args.web:
-        run_web(args.host, args.port)
+        run_web(args.host, args.port, args.database)
     else:
         run_cli()
 
