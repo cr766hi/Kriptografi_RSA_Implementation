@@ -161,7 +161,7 @@ def key_generation_log(detail: dict[str, int]) -> str:
     ))
 
 
-def mod_pow(base: int, exp: int, mod: int, log: list[str] | None = None) -> int:
+def mod_pow(base: int, exp: int, mod: int, log: list[str] | None = None) -> int: #perhitungan perpangkatan modulo seacara manual/RSA
     """Square-and-multiply modular exponentiation, implemented iteratively."""
     if mod <= 0 or exp < 0:
         raise ValueError("Modulus harus positif dan eksponen tidak boleh negatif.")
